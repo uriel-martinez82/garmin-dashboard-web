@@ -9,7 +9,7 @@ function App() {
     setLoading(true);
     setError("");
 
-    fetch("https://86ee-186-148-227-34.ngrok-free.app/webhook/dashboard/summary")
+    fetch("/api/dashboard")
       .then((res) => {
         if (!res.ok) {
           throw new Error("No se pudo obtener el dashboard");
