@@ -140,7 +140,15 @@ function ActivityRow({ act, zones, isMobile }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#f0f0f0" }}>{formatActivity(act.activity_type)}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{act.start_time?.slice(0, 10)}</div>
+             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+              {new Date(act.start_time).toLocaleDateString("es-MX", {
+                timeZone: "America/Costa_Rica",
+                day: "2-digit", month: "2-digit", year: "numeric"
+              })} · {new Date(act.start_time).toLocaleTimeString("es-MX", {
+                timeZone: "America/Costa_Rica",
+                hour: "2-digit", minute: "2-digit"
+              })}
+            </div>   
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: zone.color, background: `${zone.color}18`, padding: "3px 8px", borderRadius: 20, border: `1px solid ${zone.color}40`, flexShrink: 0, marginLeft: 8 }}>Z{zone.zone}</span>
         </div>
@@ -158,7 +166,15 @@ function ActivityRow({ act, zones, isMobile }) {
       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: "#f0f0f0" }}>{formatActivity(act.activity_type)}</div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{act.start_time?.slice(0, 10)}</div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+          {new Date(act.start_time).toLocaleDateString("es-MX", {
+            timeZone: "America/Costa_Rica",
+            day: "2-digit", month: "2-digit", year: "numeric"
+          })} · {new Date(act.start_time).toLocaleTimeString("es-MX", {
+            timeZone: "America/Costa_Rica",
+            hour: "2-digit", minute: "2-digit"
+          })}
+        </div>      
       </div>
       <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{distKm} km</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>distancia</div></div>
       <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{durMin} min</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>duración</div></div>
