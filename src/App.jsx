@@ -75,6 +75,12 @@ function formatActivity(type) {
   return map[type] || "🏅 " + (type || "Actividad");
 }
 
+const ZONE_COLORS = ["#60efff", "#00d4aa", "#f9c74f", "#f77f00", "#d62828"];
+
+function getActivityZoneTotals(act) {
+  return [1,2,3,4,5].map(z => act[`hr_zone_${z}_sec`] || 0);
+}
+
 // ─── Components ───────────────────────────────────────────────────────────────
 
 function AnimatedNumber({ value, suffix = "" }) {
@@ -113,15 +119,17 @@ function RingGauge({ value, max = 100, color, size = 80, strokeWidth = 8, childr
   );
 }
 
+// Usa datos reales de Garmin (hr_zone_X_sec)
 function ZoneBar({ zone, activities }) {
-  const inZone = activities.filter(a => a.avg_heart_rate >= zone.min && a.avg_heart_rate <= zone.max);
-  const totalMin = inZone.reduce((s, a) => s + a.duration_seconds / 60, 0);
+  const zoneKey = `hr_zone_${zone.zone}_sec`;
+  const totalSec = activities.reduce((s, a) => s + (a[zoneKey] || 0), 0);
+  const totalMin = Math.round(totalSec / 60);
   const pct = Math.min((totalMin / 300) * 100, 100);
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
         <span style={{ fontSize: 12, color: zone.color, fontWeight: 700 }}>Z{zone.zone} {zone.name}</span>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{zone.min}–{zone.max} · {Math.round(totalMin)} min</span>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{zone.min}–{zone.max} bpm · {totalMin} min</span>
       </div>
       <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: zone.color, borderRadius: 3, transition: "width 1.4s cubic-bezier(.4,0,.2,1)" }} />
@@ -130,25 +138,41 @@ function ZoneBar({ zone, activities }) {
   );
 }
 
+// Mini barra de distribución de zonas por actividad
+function ZoneDistBar({ act }) {
+  const totals = getActivityZoneTotals(act);
+  const total = totals.reduce((s, v) => s + v, 0);
+  if (total === 0) return null;
+  return (
+    <div style={{ display: "flex", height: 4, borderRadius: 2, overflow: "hidden", marginTop: 8, gap: 1 }}>
+      {totals.map((sec, i) => {
+        const pct = (sec / total) * 100;
+        if (pct < 1) return null;
+        return <div key={i} style={{ width: `${pct}%`, background: ZONE_COLORS[i], transition: "width 1s ease" }} title={`Z${i+1}: ${Math.round(sec/60)} min`} />;
+      })}
+    </div>
+  );
+}
+
 function ActivityRow({ act, zones, isMobile }) {
   const zone = getZoneForActivity(act.avg_heart_rate || 0, zones);
   const distKm = ((act.distance_meters || 0) / 1000).toFixed(2);
   const durMin = Math.round((act.duration_seconds || 0) / 60);
+
+  const dateStr = new Date(act.start_time).toLocaleDateString("es-MX", {
+    timeZone: "America/Costa_Rica", day: "2-digit", month: "2-digit", year: "numeric"
+  });
+  const timeStr = new Date(act.start_time).toLocaleTimeString("es-MX", {
+    timeZone: "America/Costa_Rica", hour: "2-digit", minute: "2-digit"
+  });
+
   if (isMobile) {
     return (
       <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#f0f0f0" }}>{formatActivity(act.activity_type)}</div>
-             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
-              {new Date(act.start_time).toLocaleDateString("es-MX", {
-                timeZone: "America/Costa_Rica",
-                day: "2-digit", month: "2-digit", year: "numeric"
-              })} · {new Date(act.start_time).toLocaleTimeString("es-MX", {
-                timeZone: "America/Costa_Rica",
-                hour: "2-digit", minute: "2-digit"
-              })}
-            </div>   
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{dateStr} · {timeStr}</div>
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: zone.color, background: `${zone.color}18`, padding: "3px 8px", borderRadius: 20, border: `1px solid ${zone.color}40`, flexShrink: 0, marginLeft: 8 }}>Z{zone.zone}</span>
         </div>
@@ -156,29 +180,26 @@ function ActivityRow({ act, zones, isMobile }) {
           <div><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{distKm} km</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>distancia</div></div>
           <div><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{durMin} min</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>duración</div></div>
           <div><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{act.avg_heart_rate || "—"} bpm</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>FC media</div></div>
+          {act.avg_cadence && <div><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{act.avg_cadence} rpm</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>cadencia</div></div>}
         </div>
+        <ZoneDistBar act={act} />
       </div>
     );
   }
+
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 80px 100px", gap: 8, alignItems: "center", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", transition: "background .2s" }}
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 70px 70px 80px 80px 110px", gap: 8, alignItems: "center", padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", transition: "background .2s" }}
       onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: "#f0f0f0" }}>{formatActivity(act.activity_type)}</div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
-          {new Date(act.start_time).toLocaleDateString("es-MX", {
-            timeZone: "America/Costa_Rica",
-            day: "2-digit", month: "2-digit", year: "numeric"
-          })} · {new Date(act.start_time).toLocaleTimeString("es-MX", {
-            timeZone: "America/Costa_Rica",
-            hour: "2-digit", minute: "2-digit"
-          })}
-        </div>      
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{dateStr} · {timeStr}</div>
+        <ZoneDistBar act={act} />
       </div>
-      <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{distKm} km</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>distancia</div></div>
-      <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{durMin} min</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>duración</div></div>
-      <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0" }}>{act.avg_heart_rate || "—"}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>FC media</div></div>
+      <div style={{ textAlign: "right" }}><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{distKm} km</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>distancia</div></div>
+      <div style={{ textAlign: "right" }}><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{durMin} min</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>duración</div></div>
+      <div style={{ textAlign: "right" }}><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{act.avg_heart_rate || "—"} bpm</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>FC media</div></div>
+      <div style={{ textAlign: "right" }}><div style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>{act.avg_cadence ? `${act.avg_cadence} rpm` : "—"}</div><div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>cadencia</div></div>
       <div style={{ textAlign: "right" }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: zone.color, background: `${zone.color}18`, padding: "3px 8px", borderRadius: 20, border: `1px solid ${zone.color}40` }}>Z{zone.zone} {zone.name}</span>
       </div>
@@ -247,6 +268,12 @@ export default function App() {
     .filter(a => (new Date() - new Date(a.start_time)) < 7 * 24 * 3600 * 1000)
     .reduce((s, a) => s + calcTRIMP(a.duration_seconds / 60, a.avg_heart_rate || 120, daily.resting_heart_rate || 47, maxHR, user.gender), 0);
 
+  // Total minutos reales en cada zona (todas las actividades)
+  const totalZoneMins = [1,2,3,4,5].map(z =>
+    Math.round(activities.reduce((s, a) => s + (a[`hr_zone_${z}_sec`] || 0), 0) / 60)
+  );
+  const totalTrainingMin = totalZoneMins.reduce((s, v) => s + v, 0);
+
   const tabs = ["overview", "zonas FC", "actividades", "científico", "insight IA"];
   const pad  = isMobile ? "16px" : "32px";
 
@@ -274,7 +301,6 @@ export default function App() {
             <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em" }}>Garmin Health</span>
             {!isMobile && <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 20 }}>BETA</span>}
           </div>
-
           <div className="nav-tabs" style={{ flex: 1, justifyContent: isMobile ? "flex-start" : "center" }}>
             {tabs.map(t => (
               <button key={t} onClick={() => setActiveTab(t)}
@@ -283,7 +309,6 @@ export default function App() {
               </button>
             ))}
           </div>
-
           <button onClick={loadData} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", flexShrink: 0, transition: "all .2s" }}>
             {loading ? <span style={{ animation: "pulse 1s infinite" }}>●</span> : "↻"}
             {!isMobile && " Sincronizar"}
@@ -304,19 +329,21 @@ export default function App() {
             {summary.total_days || 0} día{summary.total_days !== 1 ? "s" : ""} de datos
             {user.vo2max ? ` · VO2max ${user.vo2max}` : ""}
             {user.age    ? ` · ${user.age} años` : ""}
+            {totalTrainingMin > 0 ? ` · ${totalTrainingMin} min entrenados` : ""}
           </p>
         </div>
 
         {/* ── OVERVIEW ── */}
         {activeTab === "overview" && (
           <div style={{ display: "grid", gap: 16 }}>
+
             {/* KPIs */}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 14 }}>
               {[
-                { label: "Pasos diarios",   value: summary.avg_steps,               suffix: "",     icon: "👣", color: "#60efff", sub: `Meta 10k · ${Math.round(((summary.avg_steps||0)/10000)*100)}%` },
-                { label: "Calorías",        value: summary.avg_calories,             suffix: " kcal",icon: "🔥", color: "#f77f00", sub: `Activas: ${Math.round((summary.avg_calories||0)*0.14)} kcal` },
-                { label: "FC en reposo",    value: summary.avg_resting_heart_rate,   suffix: " bpm", icon: "❤️", color: "#d62828", sub: (summary.avg_resting_heart_rate||0)<60?"Atlético (AHA)":(summary.avg_resting_heart_rate||0)<70?"Normal (AHA)":"Sobre promedio" },
-                { label: "Min. activos",    value: summary.avg_active_minutes,       suffix: " min", icon: "⚡", color: "#00d4aa", sub: `OMS: ${whoCompliance.pct}% objetivo` },
+                { label: "Pasos diarios",   value: summary.avg_steps,             suffix: "",     icon: "👣", color: "#60efff", sub: `Meta 10k · ${Math.round(((summary.avg_steps||0)/10000)*100)}%` },
+                { label: "Calorías",        value: summary.avg_calories,           suffix: " kcal",icon: "🔥", color: "#f77f00", sub: `Activas: ${Math.round((summary.avg_calories||0)*0.14)} kcal` },
+                { label: "FC en reposo",    value: summary.avg_resting_heart_rate, suffix: " bpm", icon: "❤️", color: "#d62828", sub: (summary.avg_resting_heart_rate||0)<60?"Atlético (AHA)":(summary.avg_resting_heart_rate||0)<70?"Normal (AHA)":"Sobre promedio" },
+                { label: "Min. activos",    value: summary.avg_active_minutes,     suffix: " min", icon: "⚡", color: "#00d4aa", sub: `OMS: ${whoCompliance.pct}% objetivo` },
               ].map((kpi, i) => (
                 <div key={i} className="card" style={{ animationDelay:`${i*80}ms`, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:16 }}>
                   <div style={{ display:"flex", justifyContent:"space-between" }}>
@@ -332,10 +359,44 @@ export default function App() {
               ))}
             </div>
 
+            {/* Distribución global de zonas */}
+            <div className="card" style={{ animationDelay:"320ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div>
+                  <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em" }}>DISTRIBUCIÓN DE ZONAS · DATOS REALES GARMIN</p>
+                  <p style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginTop:3 }}>Tiempo total en cada zona — {activities.length} actividades</p>
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  <div style={{ fontSize:24, fontWeight:800, color:"#60efff", fontFamily:"'Space Mono',monospace" }}>{totalTrainingMin}</div>
+                  <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>min totales</div>
+                </div>
+              </div>
+              {/* Barra apilada */}
+              <div style={{ display:"flex", height:12, borderRadius:6, overflow:"hidden", marginBottom:14, gap:1 }}>
+                {totalZoneMins.map((min, i) => {
+                  const pct = totalTrainingMin > 0 ? (min / totalTrainingMin) * 100 : 0;
+                  if (pct < 0.5) return null;
+                  return <div key={i} style={{ width:`${pct}%`, background:ZONE_COLORS[i], transition:"width 1.2s ease" }} title={`Z${i+1}: ${min} min`} />;
+                })}
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:isMobile?"repeat(3,1fr)":"repeat(5,1fr)", gap:10 }}>
+                {zones.map((z, i) => (
+                  <div key={z.zone} style={{ padding:"10px 12px", background:`${z.color}0a`, border:`1px solid ${z.color}20`, borderRadius:10 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                      <div style={{ width:8, height:8, borderRadius:"50%", background:z.color, flexShrink:0 }} />
+                      <span style={{ fontSize:11, fontWeight:700, color:z.color }}>Z{z.zone}</span>
+                    </div>
+                    <div style={{ fontSize:18, fontWeight:800, color:"#f0f0f0", fontFamily:"'Space Mono',monospace" }}>{totalZoneMins[i]}</div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)" }}>min · {z.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Recovery + VO2max + WHO */}
             <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)", gap:14 }}>
               {/* Recovery */}
-              <div className="card" style={{ animationDelay:"320ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
+              <div className="card" style={{ animationDelay:"400ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
                 <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", marginBottom:14 }}>RECOVERY SCORE</p>
                 <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                   <RingGauge value={recoveryScore} color={recoveryScore>70?"#00d4aa":recoveryScore>40?"#f9c74f":"#d62828"} size={78}>
@@ -362,7 +423,7 @@ export default function App() {
               </div>
 
               {/* VO2max */}
-              <div className="card" style={{ animationDelay:"400ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
+              <div className="card" style={{ animationDelay:"480ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
                 <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", marginBottom:14 }}>VO2MAX · ACSM</p>
                 <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                   <RingGauge value={vo2percentile.percentile} color={vo2percentile.color} size={78}>
@@ -381,7 +442,7 @@ export default function App() {
               </div>
 
               {/* WHO */}
-              <div className="card" style={{ animationDelay:"480ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
+              <div className="card" style={{ animationDelay:"560ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
                 <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", marginBottom:14 }}>ADHERENCIA OMS</p>
                 <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                   <RingGauge value={whoCompliance.pct} color={whoCompliance.pct>=100?"#00d4aa":whoCompliance.pct>=60?"#f9c74f":"#f77f00"} size={78}>
@@ -397,7 +458,7 @@ export default function App() {
             </div>
 
             {/* TRIMP */}
-            <div className="card" style={{ animationDelay:"560ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
+            <div className="card" style={{ animationDelay:"640ms", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
               <div style={{ display:"flex", flexDirection:isMobile?"column":"row", justifyContent:"space-between", alignItems:isMobile?"flex-start":"center", gap:10, marginBottom:16 }}>
                 <div>
                   <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em" }}>TRAINING LOAD SEMANAL · TRIMP (BANISTER)</p>
@@ -446,11 +507,11 @@ export default function App() {
                 ))}
               </div>
               <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, padding:20 }}>
-                <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", marginBottom:4 }}>TIEMPO EN ZONA</p>
-                <p style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginBottom:16 }}>Últimas {activities.length} sesiones</p>
+                <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em", marginBottom:4 }}>TIEMPO EN ZONA · DATOS REALES GARMIN</p>
+                <p style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginBottom:16 }}>Acumulado en {activities.length} actividades</p>
                 {zones.map(z => <ZoneBar key={z.zone} zone={z} activities={activities} />)}
                 <div style={{ marginTop:14, padding:"10px 12px", background:"rgba(255,255,255,0.03)", borderRadius:10, fontSize:12, color:"rgba(255,255,255,0.4)", lineHeight:1.6 }}>
-                  <strong style={{ color:"#60efff" }}>Entrenamiento polarizado:</strong> 80% en Z1-Z2 y 20% en Z4-Z5 para máximo VO2max.
+                  <strong style={{ color:"#60efff" }}>Entrenamiento polarizado:</strong> 80% en Z1-Z2 y 20% en Z4-Z5 para máximo desarrollo de VO2max.
                 </div>
               </div>
             </div>
@@ -462,11 +523,16 @@ export default function App() {
           <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:16, overflow:"hidden" }}>
             <div style={{ padding:"16px", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
               <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:700, letterSpacing:"0.08em" }}>HISTORIAL DE ACTIVIDADES</p>
-              <p style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginTop:2 }}>{activities.length} sesiones · Zona FC por Karvonen</p>
+              <p style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginTop:2 }}>{activities.length} sesiones · Zona FC + cadencia + distribución de zonas reales</p>
             </div>
             {!isMobile && (
-              <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", display:"grid", gridTemplateColumns:"1fr 80px 80px 80px 100px", gap:8, padding:"8px 16px" }}>
-                <span>ACTIVIDAD</span><span style={{ textAlign:"right" }}>DISTANCIA</span><span style={{ textAlign:"right" }}>DURACIÓN</span><span style={{ textAlign:"right" }}>FC MEDIA</span><span style={{ textAlign:"right" }}>ZONA</span>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.2)", display:"grid", gridTemplateColumns:"1fr 70px 70px 80px 80px 110px", gap:8, padding:"8px 16px" }}>
+                <span>ACTIVIDAD</span>
+                <span style={{ textAlign:"right" }}>DIST.</span>
+                <span style={{ textAlign:"right" }}>DUR.</span>
+                <span style={{ textAlign:"right" }}>FC MEDIA</span>
+                <span style={{ textAlign:"right" }}>CADENCIA</span>
+                <span style={{ textAlign:"right" }}>ZONA</span>
               </div>
             )}
             {activities.map((act, i) => <ActivityRow key={i} act={act} zones={zones} isMobile={isMobile} />)}
@@ -518,6 +584,7 @@ export default function App() {
                 { label:"VO2max",       value:`${user.vo2max} ml/kg/min`,         status:vo2percentile.label, color:vo2percentile.color, icon:"🫁" },
                 { label:"Stress",       value:`${daily.stress_avg}/100`,          status:"Nivel bajo", color:"#60efff", icon:"🧘" },
                 { label:"Body Battery", value:`${daily.body_battery}/100`,        status:"Buena carga",color:"#f9c74f", icon:"⚡" },
+                { label:"Zona dominante", value:`Z${totalZoneMins.indexOf(Math.max(...totalZoneMins))+1}`, status:zones[totalZoneMins.indexOf(Math.max(...totalZoneMins))]?.name || "", color:ZONE_COLORS[totalZoneMins.indexOf(Math.max(...totalZoneMins))], icon:"🎯" },
               ].map((m, i) => (
                 <div key={i} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:12, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
                   <span style={{ fontSize:18 }}>{m.icon}</span>
