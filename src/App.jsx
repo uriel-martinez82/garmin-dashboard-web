@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 function App() {
   const [data, setData] = useState(null);
@@ -78,9 +79,8 @@ function App() {
 
             <div style={styles.insightCard}>
               <h2 style={styles.insightTitle}>Último insight</h2>
-              <p style={styles.insightText}>
-                {latestInsight?.insight_text || "No hay insight disponible."}
-              </p>
+              <ReactMarkdown>{latestInsight?.insight_text || "No hay insight disponible."}
+              </ReactMarkdown>
             </div>
           </>
         )}
