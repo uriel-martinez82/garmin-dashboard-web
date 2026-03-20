@@ -229,18 +229,22 @@ export default function App() {
         setData(json);
         setLoading(false);
       })
-      .catch(() => {
-        setData(MOCK);
+      .catch((err) => {
+        console.error(err);
         setLoading(false);
       });
   };
 
-  // Use real data or mock
-  const user = data?.user || MOCK.user;
-  const summary = data?.summary || MOCK.summary;
-  const daily = data?.daily || MOCK.daily;
-  const activities = data?.activities || MOCK.activities;
-  const insightText = data?.latest_insight?.insight_text || MOCK.insight;
+  const user     = data?.user     || {};
+  const summary  = data?.summary  || {};
+  const activities = data?.activities || [];
+  const insightText = data?.latest_insight?.insight_text || "Sin insight disponible.";
+  const daily = {
+    sleep_seconds:    0,
+    body_battery:     summary.avg_body_battery,
+    stress_avg:       summary.avg_stress,
+    resting_heart_rate: summary.avg_resting_heart_rate,
+  };
 
   // Calculations
   const zones = calcHRZones(summary.avg_resting_heart_rate || 47, user.age || 42);
