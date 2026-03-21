@@ -39,6 +39,7 @@ export default function Dashboard() {
   const summary    = data?.summary  || {};
   const activities = data?.activities || [];
   const insightText = data?.latest_insight?.insight_text || "Sin insight disponible.";
+  const insightDate = data?.latest_insight?.created_at || null;
 
   const daily = {
     sleep_seconds:      0,
@@ -68,7 +69,7 @@ export default function Dashboard() {
 
   const pad = isMobile ? "16px" : "32px";
 
-  const ctx = { profile, summary, activities, insightText, daily, zones, recoveryScore, vo2percentile, whoCompliance, maxHR, weeklyTRIMP, totalZoneMins, totalTrainingMin, isMobile, age, gender, vo2max };
+  const ctx = { profile, summary, activities, insightText, insightDate, daily, zones, recoveryScore, vo2percentile, whoCompliance, maxHR, weeklyTRIMP, totalZoneMins, totalTrainingMin, isMobile, age, gender, vo2max };
 
   return (
     <div style={{ minHeight: "100vh", background: "#080c14", color: "#f0f0f0", fontFamily: "'DM Sans', sans-serif" }}>

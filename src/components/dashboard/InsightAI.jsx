@@ -2,7 +2,7 @@ import { InsightBlock } from "../ui/index";
 import { ZONE_COLORS } from "../../utils/calculations";
 
 export default function InsightAI({ ctx }) {
-  const { insightText, daily, vo2max, vo2percentile, totalZoneMins, zones, isMobile } = ctx;
+  const { insightText, insightDate, daily, vo2max, vo2percentile, totalZoneMins, zones, isMobile } = ctx;
 
   const dominantZoneIdx = totalZoneMins.indexOf(Math.max(...totalZoneMins));
 
@@ -23,7 +23,12 @@ export default function InsightAI({ ctx }) {
           <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#00d4aa,#60efff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>✦</div>
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, color: "#f0f0f0" }}>Análisis generado por Claude AI</p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Datos reales Garmin + ACSM · AHA · OMS</p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
+              Datos reales Garmin + ACSM · AHA · OMS
+              {ctx.insightDate && ` · ${new Date(ctx.insightDate).toLocaleDateString("es-MX", { 
+                day: "2-digit", month: "long", year: "numeric", timeZone: "America/Costa_Rica" 
+              })}`}
+            </p>
           </div>
         </div>
         <InsightBlock text={insightText} />
