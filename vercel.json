@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/n8n/:path*",
-      "destination": "https://86ee-186-148-227-34.ngrok-free.app/webhook/:path*"
+      "destination": "https://umz.app.n8n.cloud/webhook/:path*"
     }
   ]
 }
