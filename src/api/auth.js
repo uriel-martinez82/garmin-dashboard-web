@@ -1,4 +1,5 @@
-const N8N_BASE = "https://86ee-186-148-227-34.ngrok-free.app/webhook";
+// const N8N_BASE = "https://86ee-186-148-227-34.ngrok-free.app/webhook";
+const N8N_BASE = "/n8n";
 // En producción reemplazar por la URL fija de n8n
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
