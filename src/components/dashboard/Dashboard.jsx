@@ -7,8 +7,9 @@ import ZonesFC from "./ZonesFC";
 import Activities from "./Activities";
 import Scientific from "./Scientific";
 import InsightAI from "./InsightAI";
+import AssistantChat from "./AssistantChat";
 
-const TABS = ["overview", "zonas FC", "actividades", "científico", "insight IA"];
+const TABS = ["overview", "zonas FC", "actividades", "científico", "insight IA", "mi asistente"];
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -139,6 +140,7 @@ export default function Dashboard() {
         {activeTab === "actividades"  && <Activities  ctx={ctx} />}
         {activeTab === "científico"   && <Scientific  ctx={ctx} />}
         {activeTab === "insight IA"   && <InsightAI   ctx={ctx} />}
+        {activeTab === "mi asistente" && <AssistantChat ctx={ctx} />}
       </div>
     </div>
   );
