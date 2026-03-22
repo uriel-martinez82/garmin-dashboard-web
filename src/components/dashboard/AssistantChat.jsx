@@ -232,13 +232,15 @@ const handlePDFUpload = async (e) => {
   setUploadingPDF(true);
 
   try {
-    // Extraer texto del PDF en el browser
     const pdfjsLib = await import("pdfjs-dist");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-    
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+        "pdfjs-dist/build/pdf.worker.min.mjs",
+        import.meta.url
+        ).toString();
+
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    
+
     let fullText = "";
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
@@ -255,10 +257,10 @@ const handlePDFUpload = async (e) => {
         "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify({
-        user_id:     user?.garmin_user_id || user?.id,
-        filename:    file.name,
-        agent_type:  "general",
-        content_text: fullText.slice(0, 50000), // máximo 50k caracteres
+        user_id:      user?.garmin_user_id || user?.id,
+        filename:     file.name,
+        agent_type:   "general",
+        content_text: fullText.slice(0, 50000),
       }),
     });
 
@@ -272,7 +274,7 @@ const handlePDFUpload = async (e) => {
       }]);
     }
   } catch (err) {
-    console.error(err);
+    console.error("PDF error:", err);
     setMessages(prev => [...prev, {
       role: "assistant",
       agent: "coach",
