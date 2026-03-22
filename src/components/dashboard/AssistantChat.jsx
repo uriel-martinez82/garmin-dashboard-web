@@ -140,8 +140,8 @@ function MessageBubble({ msg, isMobile }) {
           </div>
         )}
         {msg.role === "assistant" 
-            ? <CollapsibleContent content={msg.content} />
-            : <div dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }} />
+            ? <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content || "") }} />
+            : <div dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content || "") }} />
         }
         {msg.video && (
           <div style={{ marginTop: 12, borderRadius: 10, overflow: "hidden" }}>
