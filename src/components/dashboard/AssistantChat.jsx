@@ -117,7 +117,6 @@ const MAX_PREVIEW = 500;
 
 function MessageBubble({ msg, isMobile }) {
   const isUser = msg.role === "user";
-  console.log(msg.content.length);
   return (
     <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", marginBottom: 12 }}>
       {!isUser && (
