@@ -93,27 +93,27 @@ function parseMarkdown(text) {
 
 const MAX_PREVIEW = 500;
 
-function CollapsibleContent({ content }) {
-  const [expanded, setExpanded] = useState(false);
+// function CollapsibleContent({ content }) {
+//   const [expanded, setExpanded] = useState(false);
   
-  // ─── Validación ───
-  if (!content) return null;
+//   // ─── Validación ───
+//   if (!content) return null;
   
-  const isLong = content.length > MAX_PREVIEW;
-  const displayed = expanded || !isLong ? content : content.slice(0, MAX_PREVIEW) + "...";
+//   const isLong = content.length > MAX_PREVIEW;
+//   const displayed = expanded || !isLong ? content : content.slice(0, MAX_PREVIEW) + "...";
 
-  return (
-    <div>
-      <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(displayed) }} />
-      {isLong && (
-        <button onClick={() => setExpanded(!expanded)}
-          style={{ marginTop: 10, fontSize: 11, color: "#60efff", background: "rgba(96,239,255,0.08)", border: "1px solid rgba(96,239,255,0.2)", borderRadius: 20, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit", display: "block" }}>
-          {expanded ? "▲ Ver menos" : "▼ Ver respuesta completa"}
-        </button>
-      )}
-    </div>
-  );
-}
+//   return (
+//     <div>
+//       <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(displayed) }} />
+//       {isLong && (
+//         <button onClick={() => setExpanded(!expanded)}
+//           style={{ marginTop: 10, fontSize: 11, color: "#60efff", background: "rgba(96,239,255,0.08)", border: "1px solid rgba(96,239,255,0.2)", borderRadius: 20, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit", display: "block" }}>
+//           {expanded ? "▲ Ver menos" : "▼ Ver respuesta completa"}
+//         </button>
+//       )}
+//     </div>
+//   );
+// }
 
 function MessageBubble({ msg, isMobile }) {
   const isUser = msg.role === "user";
