@@ -80,6 +80,17 @@ function detectAgent(message) {
   return "coach";
 }
 
+function parseMarkdown(text) {
+  return text
+    .replace(/^### (.+)$/gm, '<strong style="color:#60efff;font-size:13px">$1</strong>')
+    .replace(/^## (.+)$/gm, '<strong style="color:#60efff;font-size:14px;display:block;margin-top:12px">$1</strong>')
+    .replace(/^# (.+)$/gm, '<strong style="color:#60efff;font-size:15px;display:block;margin-top:12px">$1</strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '• $1')
+    .replace(/\n/g, '<br/>');
+}
+
 function MessageBubble({ msg, isMobile }) {
   const isUser = msg.role === "user";
   return (
@@ -103,7 +114,7 @@ function MessageBubble({ msg, isMobile }) {
             {AGENT_SYSTEM_PROMPTS[msg.agent]?.name?.toUpperCase() || "ASISTENTE"}
           </div>
         )}
-        <div style={{ whiteSpace: "pre-wrap" }}>{msg.content}</div>
+        <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }} />
         {msg.video && (
           <div style={{ marginTop: 12, borderRadius: 10, overflow: "hidden" }}>
             <a href={`https://youtube.com/watch?v=${msg.video.video_id}`} target="_blank" rel="noreferrer"
