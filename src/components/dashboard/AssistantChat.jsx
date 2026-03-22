@@ -166,20 +166,19 @@ export default function AssistantChat({ ctx }) {
   }, [messages, loading]);
 
   const loadHistory = async () => {
-    try {
-        const res = await fetch(`/n8n/agent/history?user_id=${user?.garmin_user_id || user?.id}`, {
-        headers: { "ngrok-skip-browser-warning": "true" }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setMessages(data.messages || []);
-      }
-    } catch (e) {
-      console.log("Sin historial previo");
-    } finally {
-      setLoadingHistory(false);
-      // Mensaje de bienvenida si no hay historial
-      if (messages.length === 0) {
+  try {
+    const res = await fetch(`/n8n/agent/history?user_id=${user?.garmin_user_id || user?.id}`, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const history = data.messages || [];
+      
+      if (history.length > 0) {
+        // Hay historial — mostrarlo
+        setMessages(history);
+      } else {
+        // Sin historial — mensaje de bienvenida
         setMessages([{
           role: "assistant",
           agent: "coach",
@@ -188,7 +187,18 @@ export default function AssistantChat({ ctx }) {
         }]);
       }
     }
-  };
+  } catch (e) {
+    console.log("Sin historial previo");
+    setMessages([{
+      role: "assistant",
+      agent: "coach",
+      content: `¡Hola ${user?.full_name?.split(" ")[0] || ""}! 👋 ¿En qué te puedo ayudar hoy?`,
+      created_at: new Date().toISOString(),
+    }]);
+  } finally {
+    setLoadingHistory(false);
+  }
+};
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
