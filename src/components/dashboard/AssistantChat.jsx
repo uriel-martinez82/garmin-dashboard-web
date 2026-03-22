@@ -224,6 +224,67 @@ export default function AssistantChat({ ctx }) {
     "¿Cómo mejorar mi recuperación?",
   ];
 
+const [uploadingPDF, setUploadingPDF] = useState(false);
+
+const handlePDFUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setUploadingPDF(true);
+
+  try {
+    // Extraer texto del PDF en el browser
+    const pdfjsLib = await import("pdfjs-dist");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let fullText = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(item => item.str).join(" ") + "\n";
+    }
+
+    // Enviar texto a n8n
+    const res = await fetch("/n8n/agent/upload-document", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        user_id:     user?.garmin_user_id || user?.id,
+        filename:    file.name,
+        agent_type:  "general",
+        content_text: fullText.slice(0, 50000), // máximo 50k caracteres
+      }),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        agent: "coach",
+        content: `✅ Documento **"${file.name}"** cargado correctamente. Ahora puedo analizarlo en mis respuestas. ¿Tenés alguna pregunta sobre el estudio?`,
+        created_at: new Date().toISOString(),
+      }]);
+    }
+  } catch (err) {
+    console.error(err);
+    setMessages(prev => [...prev, {
+      role: "assistant",
+      agent: "coach",
+      content: "❌ No pude procesar el PDF. Asegurate que sea un archivo PDF válido.",
+      created_at: new Date().toISOString(),
+    }]);
+  } finally {
+    setUploadingPDF(false);
+    e.target.value = "";
+  }
+};
+
   return (
     <>
       {showHistory && <HistoryModal history={history} onClose={() => setShowHistory(false)} isMobile={isMobile} />}
@@ -246,6 +307,10 @@ export default function AssistantChat({ ctx }) {
               🕐 Ver historial ({history.length})
             </button>
           )}
+          <label style={{ fontSize: 11, color: "#f9c74f", background: "rgba(249,199,79,0.08)", border: "1px solid rgba(249,199,79,0.2)", borderRadius: 20, padding: "6px 12px", cursor: uploadingPDF ? "default" : "pointer", fontFamily: "inherit", whiteSpace: "nowrap", opacity: uploadingPDF ? 0.6 : 1 }}>
+            {uploadingPDF ? "⏳ Procesando..." : "📄 Subir estudio"}
+            <input type="file" accept=".pdf" style={{ display: "none" }} onChange={handlePDFUpload} disabled={uploadingPDF} />
+          </label>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00d4aa" }} />
             {!isMobile && <span style={{ fontSize: 11, color: "#00d4aa", fontWeight: 600 }}>En línea</span>}
