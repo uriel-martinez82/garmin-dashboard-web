@@ -91,6 +91,26 @@ function parseMarkdown(text) {
     .replace(/\n/g, '<br/>');
 }
 
+const MAX_PREVIEW = 300; // caracteres antes de truncar
+
+function CollapsibleContent({ content }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = content.length > MAX_PREVIEW;
+  const displayed = expanded || !isLong ? content : content.slice(0, MAX_PREVIEW) + "...";
+
+  return (
+    <div>
+      <div dangerouslySetInnerHTML={{ __html: parseMarkdown(displayed) }} />
+      {isLong && (
+        <button onClick={() => setExpanded(!expanded)}
+          style={{ marginTop: 8, fontSize: 11, color: "#60efff", background: "rgba(96,239,255,0.08)", border: "1px solid rgba(96,239,255,0.2)", borderRadius: 20, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}>
+          {expanded ? "▲ Ver menos" : "▼ Ver respuesta completa"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function MessageBubble({ msg, isMobile }) {
   const isUser = msg.role === "user";
   return (
@@ -114,7 +134,10 @@ function MessageBubble({ msg, isMobile }) {
             {AGENT_SYSTEM_PROMPTS[msg.agent]?.name?.toUpperCase() || "ASISTENTE"}
           </div>
         )}
-        <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }} />
+        {msg.role === "assistant" 
+            ? <CollapsibleContent content={msg.content} />
+            : <div dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }} />
+        }
         {msg.video && (
           <div style={{ marginTop: 12, borderRadius: 10, overflow: "hidden" }}>
             <a href={`https://youtube.com/watch?v=${msg.video.video_id}`} target="_blank" rel="noreferrer"
