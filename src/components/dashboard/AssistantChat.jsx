@@ -200,7 +200,7 @@ export default function AssistantChat({ ctx }) {
     });
     if (res.ok) {
       const data = await res.json();
-      const history = data.messages || [];
+      const history = Array.isArray(data.messages) ? data.messages : [];
       
       if (history.length > 0) {
         // Hay historial — mostrarlo
@@ -331,7 +331,7 @@ export default function AssistantChat({ ctx }) {
       </div>
 
       {/* Suggested questions */}
-      {messages.length <= 1 && !loading && (
+      {(messages?.length ?? 0) <= 1 && !loading && (
         <div style={{ padding: "0 16px 12px", display: "flex", gap: 8, flexWrap: "wrap" }}>
           {suggestedQuestions.map((q, i) => (
             <button key={i} onClick={() => { setInput(q); }}
