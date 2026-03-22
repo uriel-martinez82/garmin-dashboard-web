@@ -95,6 +95,10 @@ const MAX_PREVIEW = 500;
 
 function CollapsibleContent({ content }) {
   const [expanded, setExpanded] = useState(false);
+  
+  // ─── Validación ───
+  if (!content) return null;
+  
   const isLong = content.length > MAX_PREVIEW;
   const displayed = expanded || !isLong ? content : content.slice(0, MAX_PREVIEW) + "...";
 
