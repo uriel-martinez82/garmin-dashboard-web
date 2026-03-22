@@ -156,7 +156,7 @@ export default function AssistantChat({ ctx }) {
 
   const loadHistory = async () => {
     try {
-      const res = await fetch(`/n8n/agent/history?user_id=${user?.id}`, {
+        const res = await fetch(`/n8n/agent/history?user_id=${user?.garmin_user_id || user?.id}`, {
         headers: { "ngrok-skip-browser-warning": "true" }
       });
       if (res.ok) {
@@ -202,7 +202,7 @@ export default function AssistantChat({ ctx }) {
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          user_id: user?.id,
+          user_id: user?.garmin_user_id || user?.id,
           message: userMessage.content,
           agent_type: detectedAgent,
           context: {
