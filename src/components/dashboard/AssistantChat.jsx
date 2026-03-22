@@ -192,30 +192,28 @@ export default function AssistantChat({ ctx }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const loadHistory = async () => {
+const loadHistory = async () => {
   try {
     const res = await fetch(`/n8n/agent/history?user_id=${user?.garmin_user_id || user?.id}`, {
       headers: { "ngrok-skip-browser-warning": "true" }
     });
-    if (res.ok) {
-      const data = await res.json();
-      const history = Array.isArray(data.messages) ? data.messages : [];
-      
-      if (history.length > 0) {
-        // Hay historial — mostrarlo
-        setMessages(history);
-      } else {
-        // Sin historial — mensaje de bienvenida
-        setMessages([{
-          role: "assistant",
-          agent: "coach",
-          content: `¡Hola ${user?.full_name?.split(" ")[0] || ""}! 👋 Soy tu asistente personal de salud y rendimiento deportivo.\n\nPuedo ayudarte con:\n• 🏃 Optimización de entrenamiento\n• 🦴 Prevención de lesiones\n• 🧘 Recuperación y movilidad\n• 🥗 Nutrición deportiva\n\nTodas mis recomendaciones están basadas en estudios científicos de organismos mundiales como ACSM, IOC, WHO y más.\n\n¿En qué te puedo ayudar hoy?`,
-          created_at: new Date().toISOString(),
-        }]);
-      }
+    console.log("History status:", res.status);
+    const data = await res.json();
+    console.log("History data:", data);
+    const history = Array.isArray(data.messages) ? data.messages : [];
+    
+    if (history.length > 0) {
+      setMessages(history);
+    } else {
+      setMessages([{
+        role: "assistant",
+        agent: "coach",
+        content: `¡Hola ${user?.full_name?.split(" ")[0] || ""}! 👋 Soy tu asistente personal de salud y rendimiento deportivo.\n\nPuedo ayudarte con:\n• 🏃 Optimización de entrenamiento\n• 🦴 Prevención de lesiones\n• 🧘 Recuperación y movilidad\n• 🥗 Nutrición deportiva\n\n¿En qué te puedo ayudar hoy?`,
+        created_at: new Date().toISOString(),
+      }]);
     }
   } catch (e) {
-    console.log("Sin historial previo");
+    console.log("Error historial:", e);
     setMessages([{
       role: "assistant",
       agent: "coach",
