@@ -91,7 +91,7 @@ function parseMarkdown(text) {
     .replace(/\n/g, '<br/>');
 }
 
-const MAX_PREVIEW = 300; // caracteres antes de truncar
+const MAX_PREVIEW = 500;
 
 function CollapsibleContent({ content }) {
   const [expanded, setExpanded] = useState(false);
@@ -100,10 +100,10 @@ function CollapsibleContent({ content }) {
 
   return (
     <div>
-      <div dangerouslySetInnerHTML={{ __html: parseMarkdown(displayed) }} />
+      <div style={{ whiteSpace: "pre-wrap" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(displayed) }} />
       {isLong && (
         <button onClick={() => setExpanded(!expanded)}
-          style={{ marginTop: 8, fontSize: 11, color: "#60efff", background: "rgba(96,239,255,0.08)", border: "1px solid rgba(96,239,255,0.2)", borderRadius: 20, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit" }}>
+          style={{ marginTop: 10, fontSize: 11, color: "#60efff", background: "rgba(96,239,255,0.08)", border: "1px solid rgba(96,239,255,0.2)", borderRadius: 20, padding: "4px 12px", cursor: "pointer", fontFamily: "inherit", display: "block" }}>
           {expanded ? "▲ Ver menos" : "▼ Ver respuesta completa"}
         </button>
       )}
@@ -113,6 +113,7 @@ function CollapsibleContent({ content }) {
 
 function MessageBubble({ msg, isMobile }) {
   const isUser = msg.role === "user";
+  console.log(msg.content.length);
   return (
     <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", marginBottom: 12 }}>
       {!isUser && (
